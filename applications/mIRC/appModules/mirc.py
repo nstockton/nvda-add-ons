@@ -116,6 +116,7 @@ class AppModule(appModuleHandler.AppModule):
 		info=api.getReviewPosition().obj.makeTextInfo(textInfos.POSITION_LAST)
 		api.setReviewPosition(info.copy())
 		info.expand(textInfos.UNIT_LINE)
+		speech.cancelSpeech()
 		speech.speakTextInfo(info,unit=textInfos.UNIT_LINE,reason=speech.REASON_CARET)
 	script_review_bottom.__doc__=_("Moves the review cursor to the bottom line of the current navigator object and speaks it")
 
