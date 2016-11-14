@@ -83,12 +83,17 @@ class AppModule(appModuleHandler.AppModule):
 		))
 		# Load and validate the NVDA configuration file for MushClient.
 		path = os.path.join(addonHandler.getCodeAddon().path, "config.ini")
-		self.mushclientConfig = ConfigObj(path, configspec=StringIO(configSpec), indent_type="\t", default_encoding="utf-8", encoding="utf-8", stringify=True)
-		self.mushclientConfig.newlines = "\r\n"
-		val = Validator()
-		result = self.mushclientConfig.validate(val, preserve_errors=True, copy=True)
-		if result != True:
-			log.warning("Corrupted MushClient add-on configuration file: %s", result)
+		try:
+			self.mushclientConfig = ConfigObj(path, configspec=StringIO(configSpec), indent_type="\t", default_encoding="utf-8", encoding="utf-8", stringify=True)
+			self.mushclientConfig.newlines = "\r\n"
+			val = Validator()
+			result = self.mushclientConfig.validate(val, preserve_errors=True, copy=True)
+			if not result:
+				log.warning("Corrupted MushClient add-on configuration file: %s", result)
+				self.mushclientConfig = None
+				return
+		except:
+			log.warning("Unable to load the MushClient add-on configuration file: %s", path)
 			self.mushclientConfig = None
 			return
 		# Update NVDA settings from the MushClient configuration.
@@ -108,7 +113,7 @@ class AppModule(appModuleHandler.AppModule):
 		self.mushclientConfig["keyboard"]["speechInterruptForEnter"] = config.conf["keyboard"]["speechInterruptForEnter"]
 		val = Validator()
 		result = self.mushclientConfig.validate(val, preserve_errors=True, copy=True)
-		if result != True:
+		if not result:
 			log.warning("Corrupted MushClient add-on configuration in memory: %s", result)
 			self.mushclientConfig = None
 			return

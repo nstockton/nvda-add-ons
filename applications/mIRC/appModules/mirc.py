@@ -58,12 +58,17 @@ class AppModule(nvdaBuiltin.appModules.mirc.AppModule):
 		))
 		# Load and validate the NVDA configuration file for mIRC.
 		path = os.path.join(addonHandler.getCodeAddon().path, "config.ini")
-		self.mircConfig = ConfigObj(path, configspec=StringIO(configSpec), indent_type="\t", default_encoding="utf-8", encoding="utf-8", stringify=True)
-		self.mircConfig.newlines = "\r\n"
-		val = Validator()
-		result = self.mircConfig.validate(val, preserve_errors=True, copy=True)
-		if result != True:
-			log.warning("Corrupted mIRC add-on configuration file: %s", result)
+		try:
+			self.mircConfig = ConfigObj(path, configspec=StringIO(configSpec), indent_type="\t", default_encoding="utf-8", encoding="utf-8", stringify=True)
+			self.mircConfig.newlines = "\r\n"
+			val = Validator()
+			result = self.mircConfig.validate(val, preserve_errors=True, copy=True)
+			if not result:
+				log.warning("Corrupted mIRC add-on configuration file: %s", result)
+				self.mircConfig = None
+				return
+		except:
+			log.warning("Unable to load the mIRC add-on configuration file: %s", path)
 			self.mircConfig = None
 			return
 		# Update NVDA settings from the mIRC configuration.
@@ -83,7 +88,7 @@ class AppModule(nvdaBuiltin.appModules.mirc.AppModule):
 		self.mircConfig["keyboard"]["speechInterruptForEnter"] = config.conf["keyboard"]["speechInterruptForEnter"]
 		val = Validator()
 		result = self.mircConfig.validate(val, preserve_errors=True, copy=True)
-		if result != True:
+		if not result:
 			log.warning("Corrupted mIRC add-on configuration in memory: %s", result)
 			self.mircConfig = None
 			return
