@@ -17,16 +17,24 @@ import os.path
 # Built-in NVDA Modules
 import addonHandler
 import appModuleHandler
-import nvdaBuiltin.appModules.mirc
 import api
 import oleacc
 import config
 from configobj import ConfigObj
+from logHandler import log
+import nvdaBuiltin.appModules.mirc
 import NVDAObjects.IAccessible
 import speech
 import textInfos
-from logHandler import log
+import ui
 from validate import Validator
+
+# Initialize translations
+addonHandler.initTranslation()
+
+# Script category for mIRC gestures.
+# Translators: The name of the mIRC gestures category.
+SCRCAT_MIRC = _("mIRC")
 
 
 class AppModule(nvdaBuiltin.appModules.mirc.AppModule):
@@ -100,31 +108,45 @@ class AppModule(nvdaBuiltin.appModules.mirc.AppModule):
 		config.conf["keyboard"]["speechInterruptForCharacters"] = self.originalConfig["speechInterruptForCharacters"]
 		config.conf["keyboard"]["speechInterruptForEnter"] = self.originalConfig["speechInterruptForEnter"]
 
-	def script_review_bottom(self,gesture):
+	def script_review_bottom(self, gesture):
 		info = api.getReviewPosition().obj.makeTextInfo(textInfos.POSITION_LAST)
 		api.setReviewPosition(info.copy())
 		info.expand(textInfos.UNIT_LINE)
 		speech.cancelSpeech()
-		speech.speakTextInfo(info,unit=textInfos.UNIT_LINE,reason=speech.REASON_CARET)
-	script_review_bottom.__doc__=_("Moves the review cursor to the bottom line of the current navigator object and speaks it")
+		speech.speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=speech.REASON_CARET)
+	# Translators: Input help mode message for the review_bottom gesture.
+	script_review_bottom.__doc__ = _("Moves the review cursor to the bottom line of the current navigator object and speaks it")
+	script_review_bottom.category = SCRCAT_MIRC
 
-	def script_toggle_interrupt_chars(self,gesture):
-		setting = not config.conf[u"keyboard"][u"speechInterruptForCharacters"]
-		config.conf[u"keyboard"][u"speechInterruptForCharacters"] = setting
+	def script_toggle_interrupt_chars(self, gesture):
+		value = not config.conf[u"keyboard"][u"speechInterruptForCharacters"]
+		config.conf[u"keyboard"][u"speechInterruptForCharacters"] = value
 		speech.cancelSpeech()
-		speech.speakMessage("Interrupt on character press {state}.".format(state = "off" if not setting else "on"))
-	script_toggle_interrupt_chars.__doc__=_("Toggles the interrupting of speech when a character is pressed.")
+		# Translators: Indicates that NVDA will interrupt on character press.
+		enabled = _("Interrupt on character press on.")
+		# Translators: Indicates that NVDA will *not* interrupt on character press.
+		disabled = _("Interrupt on character press off.")
+		ui.message(enabled if value else disabled)
+	# Translators: Input help mode message for the toggle_interrupt_chars gesture.
+	script_toggle_interrupt_chars.__doc__ = _("Toggles the interrupting of speech when a character is pressed.")
+	script_toggle_interrupt_chars.category = SCRCAT_MIRC
 
-	def script_toggle_interrupt_enter(self,gesture):
-		setting = not config.conf[u"keyboard"][u"speechInterruptForEnter"]
-		config.conf[u"keyboard"][u"speechInterruptForEnter"] = setting
+	def script_toggle_interrupt_enter(self, gesture):
+		value = not config.conf[u"keyboard"][u"speechInterruptForEnter"]
+		config.conf[u"keyboard"][u"speechInterruptForEnter"] = value
 		speech.cancelSpeech()
-		speech.speakMessage("Interrupt on enter press {state}.".format(state = "off" if not setting else "on"))
-	script_toggle_interrupt_enter.__doc__=_("Toggles the interrupting of speech when the enter key is pressed.")
+		# Translators: Indicates that NVDA will interrupt on enter press.
+		enabled = _("Interrupt on enter press on.")
+		# Translators: Indicates that NVDA will *not* interrupt on enter press.
+		disabled = _("Interrupt on enter press off.")
+		ui.message(enabled if value else disabled)
+	# Translators: Input help mode message for the toggle_interrupt_enter gesture.
+	script_toggle_interrupt_enter.__doc__ = _("Toggles the interrupting of speech when the enter key is pressed.")
+	script_toggle_interrupt_enter.category = SCRCAT_MIRC
 
 	__gestures = {
 		"kb:NVDA+enter": "review_bottom",
 		"kb:numpadEnter": "review_bottom",
 		"kb:NVDA+8": "toggle_interrupt_chars",
-		"kb:NVDA+9": "toggle_interrupt_enter",
+		"kb:NVDA+9": "toggle_interrupt_enter"
 	}
