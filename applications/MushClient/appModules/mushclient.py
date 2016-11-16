@@ -20,13 +20,15 @@ import appModuleHandler
 import config
 from configobj import ConfigObj
 from logHandler import log
-from NVDAObjects.IAccessible import ContentGenericClient
+from NVDAObjects.IAccessible import getNVDAObjectFromEvent, ContentGenericClient
 from NVDAObjects.window import Window, DisplayModelLiveText
 import oleacc
 import speech
 import textInfos
 import ui
 from validate import Validator
+import windowUtils
+import winUser
 
 # Initialize translations
 addonHandler.initTranslation()
@@ -40,8 +42,9 @@ class Input(Window):
 	def event_gainFocus(self):
 		super(Input, self).event_gainFocus()
 		try:
-			output = self.parent.parent.parent.parent.firstChild.firstChild.firstChild.firstChild
-		except AttributeError:
+			hwnd = windowUtils.findDescendantWindow(parent=api.getForegroundObject().windowHandle, visible=True, controlID=59648, className="AfxFrameOrView42s")
+			output = getNVDAObjectFromEvent(hwnd=hwnd, objectID=winUser.OBJID_CLIENT, childID=0)
+		except LookupError:
 			output = None
 		if isinstance(output, DisplayModelLiveText):
 			output.startMonitoring()
