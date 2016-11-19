@@ -20,7 +20,7 @@ import appModuleHandler
 import config
 from configobj import ConfigObj
 from logHandler import log
-from NVDAObjects.IAccessible import getNVDAObjectFromEvent, ContentGenericClient
+from NVDAObjects.IAccessible import getNVDAObjectFromEvent, ContentGenericClient, IAccessible
 from NVDAObjects.window import Window, DisplayModelLiveText
 import oleacc
 import speech
@@ -64,13 +64,13 @@ class AppModule(appModuleHandler.AppModule):
 	originalConfig = {}
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
-		if obj.windowClassName == "AfxFrameOrView42s" and obj.windowControlID == 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
+		if isinstance(obj, IAccessible) and obj.windowClassName == "AfxFrameOrView42s" and obj.windowControlID == 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
 			try:
 				clsList.remove(ContentGenericClient)
 			except ValueError:
 				pass
 			clsList.insert(0, DisplayModelLiveText)
-		elif  obj.windowClassName == "Edit" and obj.windowControlID == 59664 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_TEXT:
+		elif  isinstance(obj, IAccessible) and obj.windowClassName == "Edit" and obj.windowControlID == 59664 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_TEXT:
 			clsList.insert(0, Input)
 
 	def event_appModule_gainFocus(self):
