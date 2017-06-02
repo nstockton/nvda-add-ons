@@ -21,6 +21,7 @@ import api
 import oleacc
 import config
 from configobj import ConfigObj
+import controlTypes
 from logHandler import log
 import nvdaBuiltin.appModules.mirc
 import NVDAObjects.IAccessible
@@ -110,10 +111,10 @@ class AppModule(nvdaBuiltin.appModules.mirc.AppModule):
 
 	def script_review_bottom(self, gesture):
 		info = api.getReviewPosition().obj.makeTextInfo(textInfos.POSITION_LAST)
-		api.setReviewPosition(info.copy())
+		api.setReviewPosition(info)
 		info.expand(textInfos.UNIT_LINE)
 		speech.cancelSpeech()
-		speech.speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=speech.REASON_CARET)
+		speech.speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=controlTypes.REASON_CARET)
 	# Translators: Input help mode message for the review_bottom gesture.
 	script_review_bottom.__doc__ = _("Moves the review cursor to the bottom line of the current navigator object and speaks it")
 	script_review_bottom.category = SCRCAT_MIRC
