@@ -3,7 +3,7 @@
 # A part of NonVisual Desktop Access (NVDA)
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2016 Nick Stockton <nstockton@gmail.com>
+# Copyright (C) 2018 Nick Stockton <nstockton@gmail.com>
 
 """App module for Mush Client
 """
@@ -44,9 +44,12 @@ class Input(Window):
 		super(Input, self).event_gainFocus()
 		try:
 			hwnd = windowUtils.findDescendantWindow(parent=api.getForegroundObject().windowHandle, visible=True, controlID=59648, className="AfxFrameOrView42s")
-			output = getNVDAObjectFromEvent(hwnd=hwnd, objectID=winUser.OBJID_CLIENT, childID=0)
 		except LookupError:
-			output = None
+			try:
+				hwnd = windowUtils.findDescendantWindow(parent=api.getForegroundObject().windowHandle, visible=True, controlID=59648, className="AfxFrameOrView140s")
+			except LookupError:
+				hwnd = None
+		output = None if hwnd is None else getNVDAObjectFromEvent(hwnd=hwnd, objectID=winUser.OBJID_CLIENT, childID=0)
 		if isinstance(output, DisplayModelLiveText):
 			output.startMonitoring()
 			api.setNavigatorObject(output)
@@ -65,7 +68,7 @@ class AppModule(appModuleHandler.AppModule):
 	originalConfig = {}
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
-		if isinstance(obj, IAccessible) and obj.windowClassName == "AfxFrameOrView42s" and obj.windowControlID == 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
+		if isinstance(obj, IAccessible) and obj.windowClassName in ("AfxFrameOrView42s", "AfxFrameOrView140s") and obj.windowControlID == 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
 			try:
 				clsList.remove(ContentGenericClient)
 			except ValueError:
