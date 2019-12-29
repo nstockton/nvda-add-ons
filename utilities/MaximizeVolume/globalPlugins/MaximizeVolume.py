@@ -11,16 +11,16 @@
 
 import comtypes.client
 import winsound
-from win32con import VK_VOLUME_UP
+from winUser import VK_VOLUME_UP
 
 import globalPluginHandler
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_raiseVolume(self, gesture):
 		shell = comtypes.client.CreateObject("WScript.Shell")
-		for count in xrange(50):
+		for count in range(50):
 			shell.SendKeys(chr(VK_VOLUME_UP))
-		for frequency in xrange(200, 1400, 200):
+		for frequency in range(200, 1400, 200):
 			winsound.Beep(frequency,100)
 	script_raiseVolume.__doc__ = _("Unmute and raise the system volume to maximum.")
 
