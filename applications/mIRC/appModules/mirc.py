@@ -11,7 +11,7 @@
 
 
 # Built-in Python Modules
-from cStringIO import StringIO
+from io import StringIO
 import os.path
 
 # Built-in NVDA Modules
@@ -28,7 +28,11 @@ import NVDAObjects.IAccessible
 import speech
 import textInfos
 import ui
-from validate import Validator
+try:
+	from validate import Validator
+except ImportError:
+	# NVDA >= 2019.3.0.
+	from configobj.validate import Validator
 
 # Initialize translations
 addonHandler.initTranslation()
