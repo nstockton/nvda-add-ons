@@ -9,7 +9,11 @@ import sys
 
 from globalPluginHandler import GlobalPlugin
 import addonHandler
-import shellapi
+try:
+	from win32api import ShellExecute
+except ImportError:
+	# NVDA >= 2019.3.0.
+	from shellapi import ShellExecute
 import winUser
 
 addonHandler.initTranslation()
@@ -21,7 +25,21 @@ class GlobalPlugin(GlobalPlugin):
 	def __init__(self, *args, **kwargs):
 		super(GlobalPlugin, self).__init__(*args, **kwargs)
 		self._path = os.path.abspath(os.path.dirname(__file__))
-		shellapi.ShellExecute(None, "open", os.path.join(self._path, "Emergency_NVDA_Killer.exe"), f"\"{sys.argv[0]}\"", self._path, winUser.SW_SHOWNORMAL)
+		ShellExecute(
+			None,
+			"open",
+			os.path.join(self._path, "Emergency_NVDA_Killer.exe"),
+			"\"{}\"".format(sys.argv[0]),
+			self._path,
+			winUser.SW_SHOWNORMAL
+		)
 
 	def terminate(self):
-		shellapi.ShellExecute(None, "open", os.path.join(self._path, "Emergency_NVDA_Killer.exe"), "/exit", self._path, winUser.SW_SHOWNORMAL)
+		ShellExecute(
+			None,
+			"open",
+			os.path.join(self._path, "Emergency_NVDA_Killer.exe"),
+			"/exit",
+			self._path,
+			winUser.SW_SHOWNORMAL
+		)

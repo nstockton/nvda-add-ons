@@ -10,7 +10,11 @@
 
 
 # Built-in Python Modules
-from io import StringIO
+try:
+	from cStringIO import StringIO
+except ImportError:
+	# Python3
+	from io import StringIO
 import os.path
 
 # Built-in NVDA Modules
@@ -111,7 +115,7 @@ class AppModule(appModuleHandler.AppModule):
 				log.warning("Corrupted MushClient add-on configuration file: %s", result)
 				self.mushclientConfig = None
 				return
-		except:
+		except Exception:
 			log.warning("Unable to load the MushClient add-on configuration file: %s", path)
 			self.mushclientConfig = None
 			return

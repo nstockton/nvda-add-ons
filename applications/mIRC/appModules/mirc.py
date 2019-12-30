@@ -11,7 +11,11 @@
 
 
 # Built-in Python Modules
-from io import StringIO
+try:
+	from cStringIO import StringIO
+except ImportError:
+	# Python3
+	from io import StringIO
 import os.path
 
 # Built-in NVDA Modules
@@ -80,7 +84,7 @@ class AppModule(nvdaBuiltin.appModules.mirc.AppModule):
 				log.warning("Corrupted mIRC add-on configuration file: %s", result)
 				self.mircConfig = None
 				return
-		except:
+		except Exception:
 			log.warning("Unable to load the mIRC add-on configuration file: %s", path)
 			self.mircConfig = None
 			return
