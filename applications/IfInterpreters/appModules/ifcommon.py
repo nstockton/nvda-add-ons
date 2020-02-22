@@ -2,14 +2,18 @@
 # A part of NonVisual Desktop Access (NVDA)
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2014 Nick Stockton <nstockton@gmail.com>
+# Copyright (C) 2020 Nick Stockton <nstockton@gmail.com>
 # Portions of This Work Copyright (C) 2006-2013 NV Access Limited
 
 # Built-in Python modules
-from cStringIO import StringIO
+try:
+	from cStringIO import StringIO
+except ImportError:
+	# Python3
+	from io import StringIO
 from decimal import Decimal
 import difflib
-import os
+import os.path
 import time
 
 # Built-in NVDA modules
@@ -23,7 +27,11 @@ from NVDAObjects.window import DisplayModelLiveText
 from speech import speakText
 import queueHandler
 import textInfos
-from validate import Validator
+try:
+	from validate import Validator
+except ImportError:
+	# NVDA >= 2019.3.0.
+	from configobj.validate import Validator
 
 
 ADDON_CONFIG = None
@@ -35,22 +43,29 @@ delay = float(default=0.1)
 
 def loadAddonConfig(fileName):
 	global ADDON_CONFIG
-	if not ADDON_CONFIG:
+	if ADDON_CONFIG is None:
 		path = os.path.join(addonHandler.getCodeAddon().path, fileName)
-		ADDON_CONFIG = ConfigObj(path, configspec=StringIO(ADDON_CONFIG_SPEC), default_encoding="utf-8", encoding="utf-8", stringify=True)
-		ADDON_CONFIG.newlines = "\n"
-		val = Validator()
-		result = ADDON_CONFIG.validate(val, preserve_errors=True, copy=True)
-		if result != True:
-			log.warning("Corrupted add-on configuration file: %s", result)
+		try:
+			ADDON_CONFIG = ConfigObj(path, configspec=StringIO(ADDON_CONFIG_SPEC), default_encoding="utf-8", encoding="utf-8", stringify=True)
+			ADDON_CONFIG.newlines = "\r\n"
+			val = Validator()
+			result = ADDON_CONFIG.validate(val, preserve_errors=True, copy=True)
+			if not result:
+				log.warning("Corrupted add-on configuration file: %s", result)
+		except Exception:
+			log.warning("Unable to load the add-on configuration file: %s", path)
 
 def saveAddonConfig():
 	global ADDON_CONFIG
-	if not ADDON_CONFIG:
+	if ADDON_CONFIG is None:
 		raise RuntimeError("Failed to load configuration file from the add-on folder.")
 	val = Validator()
-	ADDON_CONFIG.validate(val, copy=True)
-	ADDON_CONFIG.write()
+	result = ADDON_CONFIG.validate(val, preserve_errors=True, copy=True)
+	if not result:
+		log.warning("Corrupted add-on configuration in memory: %s", result)
+		ADDON_CONFIG = None
+	else:
+		ADDON_CONFIG.write()
 
 
 class GameDisplayModelLiveText(DisplayModelLiveText):
@@ -100,7 +115,7 @@ class GameDisplayModelLiveText(DisplayModelLiveText):
 			if not self._keepMonitoring:
 				break
 			try:
-				self.STABILIZE_DELAY = ADDON_CONFIG[u"general"][u"delay"]
+				self.STABILIZE_DELAY = ADDON_CONFIG["general"]["delay"]
 			except:
 				self.STABILIZE_DELAY = 0
 			if self.STABILIZE_DELAY > 0:
@@ -162,7 +177,7 @@ class GameDisplayModelLiveText(DisplayModelLiveText):
 				textLen = len(text)
 				prevTextLen = len(prevText)
 				# Find the first character that differs between the two lines.
-				for pos in xrange(min(textLen, prevTextLen)):
+				for pos in range(min(textLen, prevTextLen)):
 					if text[pos] != prevText[pos]:
 						start = pos
 						break
@@ -175,7 +190,7 @@ class GameDisplayModelLiveText(DisplayModelLiveText):
 					# The lines are different lengths, so assume the rest of the line changed.
 					end = textLen
 				else:
-					for pos in xrange(textLen - 1, start - 1, -1):
+					for pos in range(textLen - 1, start - 1, -1):
 						if text[pos] != prevText[pos]:
 							end = pos + 1
 							break
@@ -192,21 +207,21 @@ class GameDisplayModelLiveText(DisplayModelLiveText):
 class GameAppModule(appModuleHandler.AppModule):
 	def script_decrease_delay(self,gesture):
 		global ADDON_CONFIG
-		delay = Decimal(str(ADDON_CONFIG[u"general"][u"delay"]))
+		delay = Decimal(str(ADDON_CONFIG["general"]["delay"]))
 		if delay <= Decimal(str(0.1)):
-			delay = ADDON_CONFIG[u"general"][u"delay"] = 0.0
+			delay = ADDON_CONFIG["general"]["delay"] = 0.0
 		else:
-			delay = ADDON_CONFIG[u"general"][u"delay"] = float(delay - Decimal(str(0.1)))
+			delay = ADDON_CONFIG["general"]["delay"] = float(delay - Decimal(str(0.1)))
 		speakText("%s stabilize delay set." % ("No" if delay==0.0 else str(delay) + " seconds"))
 	script_decrease_delay.__doc__=_("Decrease the Stabilize Delay for the game output.")
 
 	def script_increase_delay(self,gesture):
 		global ADDON_CONFIG
-		delay = Decimal(str(ADDON_CONFIG[u"general"][u"delay"]))
+		delay = Decimal(str(ADDON_CONFIG["general"]["delay"]))
 		if delay >= Decimal(str(0.9)):
-			delay = ADDON_CONFIG[u"general"][u"delay"] = 1.0
+			delay = ADDON_CONFIG["general"]["delay"] = 1.0
 		else:
-			delay = ADDON_CONFIG[u"general"][u"delay"] = float(delay + Decimal(str(0.1)))
+			delay = ADDON_CONFIG["general"]["delay"] = float(delay + Decimal(str(0.1)))
 		speakText("%s stabilize delay set." % ("1 second" if delay == 1.0 else str(delay) + " seconds"))
 	script_increase_delay.__doc__=_("Increase the Stabilize Delay for the game output.")
 

@@ -2,7 +2,7 @@
 # A part of NonVisual Desktop Access (NVDA)
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2014 Nick Stockton <nstockton@gmail.com>
+# Copyright (C) 2020 Nick Stockton <nstockton@gmail.com>
 # Portions of This Work Copyright (C) 2006-2013 NV Access Limited
 
 # Built-in NVDA modules
@@ -15,7 +15,7 @@ import oleacc
 from speech import speakText, speakTextInfo
 
 # Local shared functions and classes
-from ifcommon import *
+from .ifcommon import *
 
 CONFIG_FILE_NAME = "winglk_config.ini"
 
@@ -46,7 +46,6 @@ class MyDisplayModelLiveText(GameDisplayModelLiveText):
 				child = parent
 			otherLines.extend(self.myGetTextLines(child))
 			parent = parent.next
-		#/while
 		return (mainLines, otherLines)
 
 
@@ -71,7 +70,8 @@ class IO(Window):
 				output.informStyleHelp = True
 			output.gotoPrompt()
 			mainLines, otherLines = output._getTextLines()
-			map(speakText, mainLines + otherLines)
+			for line in mainLines + otherLines:
+				speakText(line)
 			self._output = output
 		else:
 			self._output = None
