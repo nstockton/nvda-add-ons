@@ -3,14 +3,18 @@
 # A part of NonVisual Desktop Access (NVDA)
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2017 Nick Stockton <nstockton@gmail.com>
+# Copyright (C) 2020 Nick Stockton <nstockton@gmail.com>
 
 """App module for JMC
 """
 
 
 # Built-in Python Modules
-from cStringIO import StringIO
+try:
+	from cStringIO import StringIO
+except ImportError:
+	# Python3
+	from io import StringIO
 import os.path
 
 # Built-in NVDA Modules
@@ -27,7 +31,11 @@ import oleacc
 import speech
 import textInfos
 import ui
-from validate import Validator
+try:
+	from validate import Validator
+except ImportError:
+	# NVDA >= 2019.3.0.
+	from configobj.validate import Validator
 import windowUtils
 import winUser
 
@@ -44,9 +52,12 @@ class Input(Window):
 		super(Input, self).event_gainFocus()
 		try:
 			hwnd = windowUtils.findDescendantWindow(parent=api.getForegroundObject().windowHandle, visible=True, controlID=59648, className="AfxFrameOrView42u")
-			output = getNVDAObjectFromEvent(hwnd=hwnd, objectID=winUser.OBJID_CLIENT, childID=0)
 		except LookupError:
-			output = None
+			try:
+				hwnd = windowUtils.findDescendantWindow(parent=api.getForegroundObject().windowHandle, visible=True, controlID=59648, className="AfxFrameOrView42")
+			except LookupError:
+				hwnd = None
+		output = None if hwnd is None else getNVDAObjectFromEvent(hwnd=hwnd, objectID=winUser.OBJID_CLIENT, childID=0)
 		if isinstance(output, DisplayModelLiveText):
 			output.startMonitoring()
 			api.setNavigatorObject(output)
@@ -65,7 +76,7 @@ class AppModule(appModuleHandler.AppModule):
 	originalConfig = {}
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
-		if isinstance(obj, IAccessible) and obj.windowClassName == "AfxFrameOrView42u" and obj.windowControlID == 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
+		if isinstance(obj, IAccessible) and obj.windowClassName in ("AfxFrameOrView42u", "AfxFrameOrView42") and obj.windowControlID == 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
 			try:
 				clsList.remove(ContentGenericClient)
 			except ValueError:
@@ -80,12 +91,15 @@ class AppModule(appModuleHandler.AppModule):
 			return
 		# Save original NVDA settings.
 		self.originalConfig["reportDynamicContentChanges"] = config.conf["presentation"]["reportDynamicContentChanges"]
+		self.originalConfig["followCaret"] = config.conf["reviewCursor"]["followCaret"]
 		self.originalConfig["speechInterruptForCharacters"] = config.conf["keyboard"]["speechInterruptForCharacters"]
 		self.originalConfig["speechInterruptForEnter"] = config.conf["keyboard"]["speechInterruptForEnter"]
 		# Define default values in case the configuration file doesn't exist.
 		configSpec = "\n".join((
 			"[presentation]",
 			"reportDynamicContentChanges = boolean(default=True)",
+			"[reviewCursor]",
+			"followCaret = boolean(default=False)",
 			"[keyboard]",
 			"speechInterruptForCharacters = boolean(default=True)",
 			"speechInterruptForEnter = boolean(default=True)"
@@ -101,12 +115,13 @@ class AppModule(appModuleHandler.AppModule):
 				log.warning("Corrupted JMC add-on configuration file: %s", result)
 				self.jmcConfig = None
 				return
-		except:
+		except Exception:
 			log.warning("Unable to load the JMC add-on configuration file: %s", path)
 			self.jmcConfig = None
 			return
 		# Update NVDA settings from the JMC configuration.
 		config.conf["presentation"]["reportDynamicContentChanges"] = self.jmcConfig["presentation"]["reportDynamicContentChanges"]
+		config.conf["reviewCursor"]["followCaret"] = self.jmcConfig["reviewCursor"]["followCaret"]
 		config.conf["keyboard"]["speechInterruptForCharacters"] = self.jmcConfig["keyboard"]["speechInterruptForCharacters"]
 		config.conf["keyboard"]["speechInterruptForEnter"] = self.jmcConfig["keyboard"]["speechInterruptForEnter"]
 
@@ -116,6 +131,7 @@ class AppModule(appModuleHandler.AppModule):
 			return
 		# Save the NVDA settings for JMC.
 		self.jmcConfig["presentation"]["reportDynamicContentChanges"] = config.conf["presentation"]["reportDynamicContentChanges"]
+		self.jmcConfig["reviewCursor"]["followCaret"] = config.conf["reviewCursor"]["followCaret"]
 		self.jmcConfig["keyboard"]["speechInterruptForCharacters"] = config.conf["keyboard"]["speechInterruptForCharacters"]
 		self.jmcConfig["keyboard"]["speechInterruptForEnter"] = config.conf["keyboard"]["speechInterruptForEnter"]
 		val = Validator()
@@ -128,6 +144,7 @@ class AppModule(appModuleHandler.AppModule):
 		self.jmcConfig = None
 		# Restore the original NVDA settings.
 		config.conf["presentation"]["reportDynamicContentChanges"] = self.originalConfig["reportDynamicContentChanges"]
+		config.conf["reviewCursor"]["followCaret"] = self.originalConfig["followCaret"]
 		config.conf["keyboard"]["speechInterruptForCharacters"] = self.originalConfig["speechInterruptForCharacters"]
 		config.conf["keyboard"]["speechInterruptForEnter"] = self.originalConfig["speechInterruptForEnter"]
 
