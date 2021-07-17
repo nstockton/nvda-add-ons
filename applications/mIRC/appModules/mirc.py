@@ -46,6 +46,13 @@ addonHandler.initTranslation()
 SCRCAT_MIRC = _("mIRC")
 
 
+try:
+	REASON_CARET = controlTypes.REASON_CARET
+except AttributeError:
+	# NVDA >= 2021.1.0.
+	REASON_CARET = controlTypes.OutputReason.CARET
+
+
 class AppModule(nvdaBuiltin.appModules.mirc.AppModule):
 	mircConfig = None
 	originalConfig = {}
@@ -122,7 +129,7 @@ class AppModule(nvdaBuiltin.appModules.mirc.AppModule):
 		api.setReviewPosition(info)
 		info.expand(textInfos.UNIT_LINE)
 		speech.cancelSpeech()
-		speech.speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=controlTypes.REASON_CARET)
+		speech.speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=REASON_CARET)
 	# Translators: Input help mode message for the review_bottom gesture.
 	script_review_bottom.__doc__ = _("Moves the review cursor to the bottom line of the current navigator object and speaks it")
 	script_review_bottom.category = SCRCAT_MIRC

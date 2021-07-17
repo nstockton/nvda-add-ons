@@ -47,6 +47,13 @@ addonHandler.initTranslation()
 SCRCAT_MUSH_CLIENT = _("Mush Client")
 
 
+try:
+	REASON_CARET = controlTypes.REASON_CARET
+except AttributeError:
+	# NVDA >= 2021.1.0.
+	REASON_CARET = controlTypes.OutputReason.CARET
+
+
 class Input(Window):
 	def event_gainFocus(self):
 		super(Input, self).event_gainFocus()
@@ -153,7 +160,7 @@ class AppModule(appModuleHandler.AppModule):
 		api.setReviewPosition(info)
 		info.expand(textInfos.UNIT_LINE)
 		speech.cancelSpeech()
-		speech.speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=controlTypes.REASON_CARET)
+		speech.speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=REASON_CARET)
 	# Translators: Input help mode message for the review_bottom gesture.
 	script_review_bottom.__doc__ = _("Moves the review cursor to the bottom line of the current navigator object and speaks it")
 	script_review_bottom.category = SCRCAT_MUSH_CLIENT
