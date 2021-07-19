@@ -20,6 +20,13 @@ from .ifcommon import *
 CONFIG_FILE_NAME = "winglk_config.ini"
 
 
+try:
+	REASON_CARET = controlTypes.REASON_CARET
+except AttributeError:
+	# NVDA >= 2021.1.0.
+	REASON_CARET = controlTypes.OutputReason.CARET
+
+
 class MyDisplayModelLiveText(GameDisplayModelLiveText):
 	def event_textChange(self):
 		super(MyDisplayModelLiveText, self).event_textChange()
@@ -30,7 +37,7 @@ class MyDisplayModelLiveText(GameDisplayModelLiveText):
 					info=child.makeTextInfo(textInfos.POSITION_SELECTION)
 					info.expand(textInfos.UNIT_LINE)
 					if info.text.strip():
-						speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=controlTypes.REASON_CARET)
+						speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=REASON_CARET)
 				except:
 					pass
 
@@ -86,7 +93,7 @@ class IO(Window):
 
 class AppModule(GameAppModule):
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
-		if obj.windowClassName.startswith("Afx:10000000:0:") and obj.windowControlID != 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
+		if (obj.windowClassName.startswith("Afx:60CF0000:0:") or obj.windowClassName.startswith("Afx:10000000:0:")) and obj.windowControlID != 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
 			try:
 				clsList.remove(DisplayModelEditableText)
 			except ValueError:
@@ -96,5 +103,5 @@ class AppModule(GameAppModule):
 			except ValueError:
 				pass
 			clsList[0:0] = (Terminal, MyDisplayModelLiveText)
-		elif obj.windowClassName == "Afx:10000000:0" and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
+		elif obj.windowClassName in ("Afx:60CF0000:0", "Afx:10000000:0") and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
 			clsList.insert(0, IO)
