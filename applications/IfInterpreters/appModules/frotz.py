@@ -58,11 +58,21 @@ class IO(Window):
 
 class AppModule(GameAppModule):
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
-		if (obj.windowClassName.startswith("Afx:004D0000:20") or obj.windowClassName.startswith("Afx:00400000:20")) and obj.windowControlID == 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
+		if (
+			obj.windowClassName.startswith("Afx:")
+			and ":20:" in obj.windowClassName
+			and obj.windowControlID == 59648
+			and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT
+		):
 			try:
 				clsList.remove(ContentGenericClient)
 			except ValueError:
 				pass
 			clsList[0:0] = (Terminal, MyDisplayModelLiveText)
-		elif obj.windowClassName in ("Afx:004D0000:0", "Afx:00400000:0") and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
+		elif (
+			obj.windowClassName.startswith("Afx:")
+			and obj.windowClassName.endswith(":0")
+			and obj.windowControlID == 0
+			and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT
+		):
 			clsList.insert(0, IO)
