@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-#appModules/mushclient.py
+# appModules/mushclient.py
 # A part of NonVisual Desktop Access (NVDA)
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
@@ -25,19 +25,18 @@ import config
 from configobj import ConfigObj
 import controlTypes
 from logHandler import log
-from NVDAObjects.IAccessible import getNVDAObjectFromEvent, ContentGenericClient, IAccessible
+from NVDAObjects.IAccessible import ContentGenericClient, IAccessible
 from NVDAObjects.window import Window, DisplayModelLiveText
 import oleacc
 import speech
 import textInfos
 import ui
+
 try:
 	from validate import Validator
 except ImportError:
 	# NVDA >= 2019.3.0.
 	from configobj.validate import Validator
-import windowUtils
-import winUser
 
 # Initialize translations
 addonHandler.initTranslation()
@@ -58,13 +57,9 @@ class Input(Window):
 	def event_gainFocus(self):
 		super(Input, self).event_gainFocus()
 		try:
-			hwnd = windowUtils.findDescendantWindow(parent=api.getForegroundObject().windowHandle, visible=True, controlID=59648, className="AfxFrameOrView42s")
-		except LookupError:
-			try:
-				hwnd = windowUtils.findDescendantWindow(parent=api.getForegroundObject().windowHandle, visible=True, controlID=59648, className="AfxFrameOrView140s")
-			except LookupError:
-				hwnd = None
-		output = None if hwnd is None else getNVDAObjectFromEvent(hwnd=hwnd, objectID=winUser.OBJID_CLIENT, childID=0)
+			output = self.parent.parent.parent.parent.firstChild.firstChild.firstChild.firstChild
+		except AttributeError:
+			output = None
 		if isinstance(output, DisplayModelLiveText):
 			output.startMonitoring()
 			api.setNavigatorObject(output)
@@ -83,13 +78,23 @@ class AppModule(appModuleHandler.AppModule):
 	originalConfig = {}
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
-		if isinstance(obj, IAccessible) and obj.windowClassName in ("AfxFrameOrView42s", "AfxFrameOrView140s") and obj.windowControlID == 59648 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT:
+		if (
+			isinstance(obj, IAccessible)
+			and obj.windowClassName.startswith("AfxFrameOrView")
+			and obj.windowControlID == 59648
+			and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_CLIENT
+		):
 			try:
 				clsList.remove(ContentGenericClient)
 			except ValueError:
 				pass
 			clsList.insert(0, DisplayModelLiveText)
-		elif  isinstance(obj, IAccessible) and obj.windowClassName == "Edit" and obj.windowControlID == 59664 and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_TEXT:
+		elif (
+			isinstance(obj, IAccessible)
+			and obj.windowClassName == "Edit"
+			and obj.windowControlID == 59664
+			and obj.IAccessibleRole == oleacc.ROLE_SYSTEM_TEXT
+		):
 			clsList.insert(0, Input)
 
 	def event_appModule_gainFocus(self):
@@ -97,24 +102,37 @@ class AppModule(appModuleHandler.AppModule):
 			# Don't clobber the already loaded config.
 			return
 		# Save original NVDA settings.
-		self.originalConfig["reportDynamicContentChanges"] = config.conf["presentation"]["reportDynamicContentChanges"]
+		self.originalConfig["reportDynamicContentChanges"] = config.conf["presentation"][
+			"reportDynamicContentChanges"
+		]
 		self.originalConfig["followCaret"] = config.conf["reviewCursor"]["followCaret"]
-		self.originalConfig["speechInterruptForCharacters"] = config.conf["keyboard"]["speechInterruptForCharacters"]
+		self.originalConfig["speechInterruptForCharacters"] = config.conf["keyboard"][
+			"speechInterruptForCharacters"
+		]
 		self.originalConfig["speechInterruptForEnter"] = config.conf["keyboard"]["speechInterruptForEnter"]
 		# Define default values in case the configuration file doesn't exist.
-		configSpec = "\n".join((
-			"[presentation]",
-			"reportDynamicContentChanges = boolean(default=False)",
-			"[reviewCursor]",
-			"followCaret = boolean(default=False)",
-			"[keyboard]",
-			"speechInterruptForCharacters = boolean(default=False)",
-			"speechInterruptForEnter = boolean(default=True)"
-		))
+		configSpec = "\n".join(
+			(
+				"[presentation]",
+				"reportDynamicContentChanges = boolean(default=False)",
+				"[reviewCursor]",
+				"followCaret = boolean(default=False)",
+				"[keyboard]",
+				"speechInterruptForCharacters = boolean(default=False)",
+				"speechInterruptForEnter = boolean(default=True)",
+			)
+		)
 		# Load and validate the NVDA configuration file for MushClient.
 		path = os.path.join(addonHandler.getCodeAddon().path, "config.ini")
 		try:
-			self.mushclientConfig = ConfigObj(path, configspec=StringIO(configSpec), indent_type="\t", default_encoding="utf-8", encoding="utf-8", stringify=True)
+			self.mushclientConfig = ConfigObj(
+				path,
+				configspec=StringIO(configSpec),
+				indent_type="\t",
+				default_encoding="utf-8",
+				encoding="utf-8",
+				stringify=True,
+			)
 			self.mushclientConfig.newlines = "\r\n"
 			val = Validator()
 			result = self.mushclientConfig.validate(val, preserve_errors=True, copy=True)
@@ -127,20 +145,32 @@ class AppModule(appModuleHandler.AppModule):
 			self.mushclientConfig = None
 			return
 		# Update NVDA settings from the MushClient configuration.
-		config.conf["presentation"]["reportDynamicContentChanges"] = self.mushclientConfig["presentation"]["reportDynamicContentChanges"]
+		config.conf["presentation"]["reportDynamicContentChanges"] = self.mushclientConfig["presentation"][
+			"reportDynamicContentChanges"
+		]
 		config.conf["reviewCursor"]["followCaret"] = self.mushclientConfig["reviewCursor"]["followCaret"]
-		config.conf["keyboard"]["speechInterruptForCharacters"] = self.mushclientConfig["keyboard"]["speechInterruptForCharacters"]
-		config.conf["keyboard"]["speechInterruptForEnter"] = self.mushclientConfig["keyboard"]["speechInterruptForEnter"]
+		config.conf["keyboard"]["speechInterruptForCharacters"] = self.mushclientConfig["keyboard"][
+			"speechInterruptForCharacters"
+		]
+		config.conf["keyboard"]["speechInterruptForEnter"] = self.mushclientConfig["keyboard"][
+			"speechInterruptForEnter"
+		]
 
 	def event_appModule_loseFocus(self):
 		if self.mushclientConfig is None:
 			# Don't save what isn't there.
 			return
 		# Save the NVDA settings for MushClient.
-		self.mushclientConfig["presentation"]["reportDynamicContentChanges"] = config.conf["presentation"]["reportDynamicContentChanges"]
+		self.mushclientConfig["presentation"]["reportDynamicContentChanges"] = config.conf["presentation"][
+			"reportDynamicContentChanges"
+		]
 		self.mushclientConfig["reviewCursor"]["followCaret"] = config.conf["reviewCursor"]["followCaret"]
-		self.mushclientConfig["keyboard"]["speechInterruptForCharacters"] = config.conf["keyboard"]["speechInterruptForCharacters"]
-		self.mushclientConfig["keyboard"]["speechInterruptForEnter"] = config.conf["keyboard"]["speechInterruptForEnter"]
+		self.mushclientConfig["keyboard"]["speechInterruptForCharacters"] = config.conf["keyboard"][
+			"speechInterruptForCharacters"
+		]
+		self.mushclientConfig["keyboard"]["speechInterruptForEnter"] = config.conf["keyboard"][
+			"speechInterruptForEnter"
+		]
 		val = Validator()
 		result = self.mushclientConfig.validate(val, preserve_errors=True, copy=True)
 		if not result:
@@ -150,9 +180,13 @@ class AppModule(appModuleHandler.AppModule):
 		self.mushclientConfig.write()
 		self.mushclientConfig = None
 		# Restore the original NVDA settings.
-		config.conf["presentation"]["reportDynamicContentChanges"] = self.originalConfig["reportDynamicContentChanges"]
+		config.conf["presentation"]["reportDynamicContentChanges"] = self.originalConfig[
+			"reportDynamicContentChanges"
+		]
 		config.conf["reviewCursor"]["followCaret"] = self.originalConfig["followCaret"]
-		config.conf["keyboard"]["speechInterruptForCharacters"] = self.originalConfig["speechInterruptForCharacters"]
+		config.conf["keyboard"]["speechInterruptForCharacters"] = self.originalConfig[
+			"speechInterruptForCharacters"
+		]
 		config.conf["keyboard"]["speechInterruptForEnter"] = self.originalConfig["speechInterruptForEnter"]
 
 	def script_review_bottom(self, gesture):
@@ -162,7 +196,9 @@ class AppModule(appModuleHandler.AppModule):
 		speech.cancelSpeech()
 		speech.speakTextInfo(info, unit=textInfos.UNIT_LINE, reason=REASON_CARET)
 	# Translators: Input help mode message for the review_bottom gesture.
-	script_review_bottom.__doc__ = _("Moves the review cursor to the bottom line of the current navigator object and speaks it")
+	script_review_bottom.__doc__ = _(
+		"Moves the review cursor to the bottom line of the current navigator object and speaks it"
+	)
 	script_review_bottom.category = SCRCAT_MUSH_CLIENT
 
 	def script_toggle_interrupt_chars(self, gesture):
@@ -175,7 +211,9 @@ class AppModule(appModuleHandler.AppModule):
 		disabled = _("Interrupt on character press off.")
 		ui.message(enabled if value else disabled)
 	# Translators: Input help mode message for the toggle_interrupt_chars gesture.
-	script_toggle_interrupt_chars.__doc__ = _("Toggles the interrupting of speech when a character is pressed.")
+	script_toggle_interrupt_chars.__doc__ = _(
+		"Toggles the interrupting of speech when a character is pressed."
+	)
 	script_toggle_interrupt_chars.category = SCRCAT_MUSH_CLIENT
 
 	def script_toggle_interrupt_enter(self, gesture):
@@ -188,12 +226,14 @@ class AppModule(appModuleHandler.AppModule):
 		disabled = _("Interrupt on enter press off.")
 		ui.message(enabled if value else disabled)
 	# Translators: Input help mode message for the toggle_interrupt_enter gesture.
-	script_toggle_interrupt_enter.__doc__=_("Toggles the interrupting of speech when the enter key is pressed.")
+	script_toggle_interrupt_enter.__doc__ = _(
+		"Toggles the interrupting of speech when the enter key is pressed."
+	)
 	script_toggle_interrupt_enter.category = SCRCAT_MUSH_CLIENT
 
 	__gestures = {
 		"kb:NVDA+enter": "review_bottom",
 		"kb:numpadEnter": "review_bottom",
 		"kb:NVDA+8": "toggle_interrupt_chars",
-		"kb:NVDA+9": "toggle_interrupt_enter"
+		"kb:NVDA+9": "toggle_interrupt_enter",
 	}
