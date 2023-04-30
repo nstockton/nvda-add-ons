@@ -17,9 +17,15 @@ import speech
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_toggle_report_line_indentation(self, gesture):
-		setting = not config.conf[u"documentFormatting"][u"reportLineIndentation"]
-		config.conf[u"documentFormatting"][u"reportLineIndentation"] = setting
-		speech.speakMessage("Report line indentation {state}.".format(state = "off" if not setting else "on"))
+		value = config.conf[u"documentFormatting"][u"reportLineIndentation"]
+		if isinstance(value, bool):
+			value = not value
+		elif value % 2:
+			value -= 1
+		else:
+			value += 1
+		config.conf[u"documentFormatting"][u"reportLineIndentation"] = value
+		speech.speakMessage("Report line indentation {state}.".format(state = "on" if value is True or value % 2 else "off"))
 	script_toggle_report_line_indentation.__doc__=_("Toggle the speaking of line indentation.")
 
 	__gestures = {
